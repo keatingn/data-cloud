@@ -1,0 +1,108 @@
+version: '2'
+
+volumes:
+  vol-zookeeper-1:
+  vol-zookeeper-2:
+  vol-zookeeper-3:
+  vol-kafka-1-logs:
+  vol-kafka-2-logs:
+  vol-kafka-3-logs:
+  vol-mysql:
+
+services:
+  zoo1:
+    image: nkeating/zookeeper-minimal
+    volumes:
+      - ./config/id1:/var/lib/zookeeper/myid
+      - ./config/zoo.cfg:/opt/zookeeper/conf/zoo.cfg
+      - vol-zookeeper-1:/var/lib/zookeeper
+  zoo2:
+    image: nkeating/zookeeper-minimal
+    volumes:
+      - ./config/id2:/var/lib/zookeeper/myid
+      - ./config/zoo.cfg:/opt/zookeeper/conf/zoo.cfg
+      - vol-zookeeper-2:/var/lib/zookeeper
+  zoo3:
+    image: nkeating/zookeeper-minimal
+    volumes:
+      - ./config/id3:/var/lib/zookeeper/myid
+      - ./config/zoo.cfg:/opt/zookeeper/conf/zoo.cfg
+      - vol-zookeeper-3:/var/lib/zookeeper
+
+  kafka1:
+    restart: unless-stopped
+    image: nkeating/kafka-minimal:2.10-0.8.2.2
+    links:
+      - zoo1:zk1
+      - zoo2:zk2
+      - zoo3:zk3
+    volumes:
+      - ./config/kafka-1:/kafka/config/server.properties
+      - vol-kafka-1-logs:/tmp/kafka-logs
+
+  kafka2:
+    restart: unless-stopped
+    image: nkeating/kafka-minimal:2.10-0.8.2.2
+    links:
+      - zoo1:zk1
+      - zoo2:zk2
+      - zoo3:zk3
+    volumes:
+      - ./config/kafka-2:/kafka/config/server.properties
+      - vol-kafka-2-logs:/tmp/kafka-logs
+
+  kafka3:
+    restart: unless-stopped
+    image: nkeating/kafka-minimal:2.10-0.8.2.2
+    links:
+      - zoo1:zk1
+      - zoo2:zk2
+      - zoo3:zk3
+    volumes:
+      - ./config/kafka-3:/kafka/config/server.properties
+      - vol-kafka-3-logs:/tmp/kafka-logs
+
+  redis:
+    image: redis
+
+  mysql:
+    image: mysql
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=changeit
+      - MYSQL_DATABASE=spring_xd
+      - MYSQL_USER=spring
+      - MYSQL_PASSWORD=batch
+    volumes:
+      - vol-mysql:/var/lib/mysql
+
+  xd-admin:
+    image: nkeating/springxd
+    ports:
+      - 9393:9393
+    links:
+      - redis
+      - mysql
+      - zoo1
+      - zoo2
+      - zoo3
+    volumes:
+      - ./config/servers.yml:/opt/spring-xd/xd/config/servers.yml
+      - ./lib/mysql-connector-java-5.1.38-bin.jar:/opt/spring-xd/xd/lib/mysql-connector-java-5.1.38-bin.jar
+    entrypoint:
+      - ./xd/bin/xd-admin
+
+  xd-container:
+    image: nkeating/springxd
+    links:
+      - redis
+      - mysql
+      - zoo1
+      - zoo2
+      - zoo3
+    volumes:
+      - ./config/servers.yml:/opt/spring-xd/xd/config/servers.yml
+      - ./lib/mysql-connector-java-5.1.38-bin.jar:/opt/spring-xd/xd/lib/mysql-connector-java-5.1.38-bin.jar
+    entrypoint:
+      - ./xd/bin/xd-container

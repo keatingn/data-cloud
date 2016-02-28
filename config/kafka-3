@@ -1,0 +1,2 @@
+broker.id=3
+zookeeper.connect=zk1,zk2,zk3/kafka
