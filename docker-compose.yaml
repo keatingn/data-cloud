@@ -106,3 +106,17 @@ services:
       - ./lib/mysql-connector-java-5.1.38-bin.jar:/opt/spring-xd/xd/lib/mysql-connector-java-5.1.38-bin.jar
     entrypoint:
       - ./xd/bin/xd-container
+
+  burrow:
+    image: nkeating/kafka-burrow
+    ports:
+      - 8000:8000
+    links:
+      - zoo1
+      - zoo2
+      - zoo3
+      - kafka1
+      - kafka2
+      - kafka3
+    volumes:
+      - ./config/burrow.cfg:/go/burrow.cfg
