@@ -1,2 +1,3 @@
 broker.id=2
 zookeeper.connect=zk1,zk2,zk3/kafka
+log.cleaner.enable=true
